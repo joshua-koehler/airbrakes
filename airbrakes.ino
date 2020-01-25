@@ -1,7 +1,7 @@
 // Joshua Köhler - 1/24/20 - Clark Aerospace - ESRA 2020 - Airbrakes Software
 
 //*TODO*
-/*	1. Write vertical velocity function
+/*	1. Add real mass of rocket in the define statement
 		2. Check units of all sensors
 		3. Modularize functions
 
@@ -25,11 +25,13 @@ Also a few optimization decisions to make:
 */
 
 // CHECK UNITS OF ALL SENSORS TO ENSURE WE HAVE THE RIGHT UNITS!
-#define g 9.80665 //acceleration of gravity (m/s^2)
+#define gravity 9.80665 //acceleration of gravity (m/s^2)
+#define mass 60 //mass of the rocket *TODO* THIS MUST BE CHANGED TO BE ACCURATE!
 #define airbrakeMotor 8 //pin to control motor
 #define halfwayToApogee 1524 //1524m = 5000ft
 #define apogeeHeight 3048 //3048m = 10,000ft
 #include <stdio.h>
+#include <unistd.h> //sleep function
 #include <math.h> //for trig functions
 #include <PID_v1.h> //PID library
 #include <time.h> //used to get system time for calculations
@@ -58,7 +60,7 @@ void setup() {//all code in the setup function is run only once
 	pinMode(7,INPUT);//For sensors?
 	pinMode(8,INPUT);//For senors?
 
-  esc.attach(airbrakMotor); //connects signal wire to pin 8 to control the motor
+  esc.attach(airbrakeMotor); //connects signal wire to pin 8 to control the motor
   bno.setExtCrystalUse(true); //use external crystal boolean (keeps track of time
  
 	Setpoint = apogeeHeight+baro.getAltitude(); //3048 meters=10,000 ft. this variable will never change, it is our setpoint (where we want the rocket to nose over at)
@@ -74,7 +76,6 @@ void setup() {//all code in the setup function is run only once
   while(alt-Setpoint < halfwayToApogee) {//1524meters = 5,000ft (half-way to apogee)
     alt=baro.getAltitude();//keep measuring the altitude till motor burnout 
   }
-	setInput();//set Input before the PID gets turned on to eliminate weirdness 
 	myPID.SetMode(AUTOMATIC);//turn the PID on
 }
 
@@ -101,7 +102,7 @@ Note that Input is a global variable, so the PID function can access it at
 all times.
 */
 void setInput(void){
-	sensors_t_event event; //initialize for gyro read
+	sensors_event_t event; //initialize for gyro read
 	double alt,v,Cd;
 	bno.getEvent(&event);//get data from the gyro
   alt = baro.getAltitude();//get data from altimeter
@@ -110,7 +111,7 @@ void setInput(void){
   Input = getProjectedAltitude(Cd, v, alt);//calculate Input to PID
 }
 /*
-This function takes two inputs, an event of type sensors_t_event
+This function takes two inputs, an event of type sensors_event_t
 for the gyro sensor, and the velocity (v).
 
 Using these two variables, it will compute the approximate drag coefficient 
@@ -123,9 +124,9 @@ Because drag depends on how fully extended the airbrake flaps are, we must
 continuously calculate drag as we make corrections based off of our 
 projected altitude.
 */
-double getDrag(sensors_t_event event,double v) {
+double getDrag(sensors_event_t event,double v) {
 	double a = getAcceleration(event);
-  double c = (a-m*g)/(v*v); // from mg+cv^2=a, we rearrange to solve for c
+  double c = (a-mass*gravity)/(v*v); // from mg+cv^2=a, we rearrange to solve for c
   return c;
 }
 
@@ -142,7 +143,7 @@ remain the same.
 This function returns the projected altitude, which is used by the PID to compare to our goal apogee, allowing the airbrake motor to make the corrections.
 */
 double getProjectedAltitude(double Cd,double v,double alt) {
-  double y = (m/Cd)*log(cos(atan(v/sqrt(m*g/Cd)))); // Calculate additional altitude projected
+  double y = (mass/Cd)*log(cos(atan(v/sqrt(mass*gravity/Cd)))); // Calculate additional altitude projected
   double ypro = y + alt;  // Projected altitude is the additional + current alt
   return ypro;
 }
@@ -171,8 +172,8 @@ double getVelocity(void) {
 	double alt,theta,velocity;
 	start = time(NULL); //get begin time
 	alt = baro.getAltitude();//get first altitude reading 
-	sleep(0.1);//sleep for 100ms
-	alt = baro.get(altitude)-alt;//2nd reading - 1st reading is the difference in altitude over the time period
+	delay(100);//delay for 100ms
+	alt = baro.getAltitude()-alt;//2nd reading - 1st reading is the difference in altitude over the time period
 	end = time(NULL);//get finish time
 	velocity=alt/(end-start);//velocity is distance/time
   return velocity;
@@ -187,9 +188,8 @@ double getAngleToVertical(sensors_event_t event) {
   // hardware read
   double x=event.orientation.x;//get angle to x
   double y=event.orientation.y;//get angle to y
-  double angle to z
 	
 	// conversion to spherical
-   theta=atan(y/x);//rectangular to spherical conversion
+  double theta=atan(y/x);//rectangular to spherical conversion
   return theta;
 }
