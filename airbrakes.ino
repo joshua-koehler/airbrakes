@@ -2,15 +2,14 @@
 
 //*TODO*
 /*	1. Add real mass of rocket in the define statement
-		2. Check units of all sensors
-		3. Modularize functions
+		2. Double check units of all sensors
 
 Also a few optimization decisions to make:
 1.	Should each get____ function get a new event, or should they all be passed
 		the same event for consistency?
 
-2.	Is using the system time accurate enought to compute velocity with the
-		altimeter?
+2.	Integrate acceleromter data to get velocity instead of using baro,
+		as the baro is inaccurate during boost.
 
 3.	If #2 is good, should we use the same method to compute accleration instead
 		of the accelerometer?
@@ -18,13 +17,12 @@ Also a few optimization decisions to make:
 4.	Consider the system timing of the PID, and how using our own timing in the 
 		velocity function could affect this.
 
-5.  Add code to turn off the airbrakes after a successful flight
+5.	Add code to turn off the airbrakes after nose over (optional but nice)
 
-6. Make sure the max for the analogWrite, hardware limit switches, and PID limit		are all in sync.  Default PID limit should be 255 (2^8 -1)
+6.	Make sure the max for the analogWrite, hardware limit switches, and PID limit		are all in sync.  Default PID limit should be 255 (2^8 -1)
 
 */
 
-// CHECK UNITS OF ALL SENSORS TO ENSURE WE HAVE THE RIGHT UNITS!
 #define gravity 9.80665 //acceleration of gravity (m/s^2)
 #define mass 60 //mass of the rocket *TODO* THIS MUST BE CHANGED TO BE ACCURATE!
 #define airbrakeMotor 8 //pin to control motor
@@ -47,8 +45,7 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55);
 //instantiates new barometer class with name baro
 Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 
-//Define variables as  - could use pointers for memory reduction
-double Setpoint, Input, Output; //global variables 
+double Setpoint, Input, Output; //global variables for PID
 //Specify the links and initial tuning parameters
 PID myPID(&Input, &Output, &Setpoint,2,5,1, REVERSE);
 
@@ -56,12 +53,13 @@ PID myPID(&Input, &Output, &Setpoint,2,5,1, REVERSE);
 
 void setup() {//all code in the setup function is run only once
   Servo esc; //declare electronic speed controller
-  
-	pinMode(7,INPUT);//For sensors?
-	pinMode(8,INPUT);//For senors?
+
+	pinMode(6,INPUT);//acceleromter
+	pinMode(7,INPUT);//altimeter 
+	pinMode(airbrakeMotor,OUTPUT);//airbrakeMotor is pin 8
 
   esc.attach(airbrakeMotor); //connects signal wire to pin 8 to control the motor
-  bno.setExtCrystalUse(true); //use external crystal boolean (keeps track of time
+	bno.setExtCrystalUse(true); //use external crystal boolean (keeps track of time
  
 	Setpoint = apogeeHeight+baro.getAltitude(); //3048 meters=10,000 ft. this variable will never change, it is our setpoint (where we want the rocket to nose over at)
 // This should be correct, this way the rocket is always shooting for exactly 10k above ground
@@ -90,7 +88,7 @@ void loop() {
 
   myPID.Compute();//have the PID compute the proper output
 
-  // Probably should set an analog out limit in the PID software
+	// Probably should set an analog out limit in the PID software
 	//write the computed output to the airbrakeMotor pin
 	analogWrite(airbrakeMotor,Output);
 }
@@ -166,6 +164,8 @@ double getAcceleration(sensors_event_t event) {//event is a struct of type senso
 This function uses the difference between two altimeter readings, with a timed
 pause in-between, to calculate velocity.  We are not sure how accurate this will
 be.
+
+Function should be changed to integrate acceleration to optimize performance.
 */
 double getVelocity(void) {
 	time_t start,end;
