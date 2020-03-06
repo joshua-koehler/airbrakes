@@ -1,41 +1,48 @@
 // Joshua Köhler - 1/24/20 - Clark Aerospace - ESRA 2020 - Airbrakes Software
 
+/*
+Note on units:
+All units are in SI.
+Acceleration: m/s^2
+Altitude: m
+Orientation: radians (converted to degrees in OUR code, but sensors gives in rad
+*/
+
 //*TODO*
 /*	1. Add real mass of rocket in the define statement
-		2. Double check units of all sensors
 
 Also a few optimization decisions to make:
-1.	Should each get____ function get a new event, or should they all be passed
-		the same event for consistency?
+1.	Get one event, and extrapolate all function data from this.
 
-2.	Integrate acceleromter data to get velocity instead of using baro,
-		as the baro is inaccurate during boost.
+2.	Consider the system timing of the PID, and how using our own timing in the 
+    velocity function could affect this.
 
-3.	If #2 is good, should we use the same method to compute accleration instead
-		of the accelerometer?
+3.	Add code to turn off the airbrakes after nose over (not mission-critical)
 
-4.	Consider the system timing of the PID, and how using our own timing in the 
-		velocity function could affect this.
+4.	Make sure the max for the analogWrite, hardware limit switches, and PID limit
+    are all in sync.  Default PID limit should be 255 (2^8 -1)
 
-5.	Add code to turn off the airbrakes after nose over (optional but nice)
+5. Ensure PID will alternate between FWD (forward) and BWD (backward) by
+   modifying library source code
+*/
 
-6.	Make sure the max for the analogWrite, hardware limit switches, and PID limit		are all in sync.  Default PID limit should be 255 (2^8 -1)
-
+/*
+if compiling C++ do the following:
+#include "Arduino.h"
+add function prototypes
 */
 
 #define gravity 9.80665 //acceleration of gravity (m/s^2)
 #define ACC_ID 55 //arbitrary id number of accelerometer sensor
-#define mass 60 //mass of the rocket *TODO* THIS MUST BE CHANGED TO BE ACCURATE!
-#define airbrakeMotor 8 //pin to control motor
+#define mass 60 //mass of the rocket *TODO* CHANGE TO REAL MASS ONCE KNOWN
 #define halfwayToApogee 1524 //1524m = 5000ft
 #define apogeeHeight 3048 //3048m = 10,000ft
-#include <stdio.h>
 #include <unistd.h> //sleep function
 #include <math.h> //for trig functions
 #include <PID_v1.h> //PID library
 #include <time.h> //used to get system time for calculations
 #include <Servo.h> //library to control airbrake servo motor
-#include <Wire.h>
+#include <Wire.h>//I2C for both altimeter and accelerometer
 #include <Adafruit_MPL3115A2.h> //Altimeter library
 #include <Adafruit_Sensor.h> //General sensor library for Adafruit
 #include <Adafruit_BNO055.h> //Accelerometer
@@ -43,6 +50,9 @@ Also a few optimization decisions to make:
 
 /*
 Pin connections map:
+Note: to use both sensors, two Arduino Unos would be needed, thus a Due will 
+be used, as it has two pairs of I2C ports.  Arduino Uno pin connections are shown
+currently.
 
 Accelerometer:
 SCL - analog 5
@@ -51,11 +61,16 @@ VDD - 3.3-5V DC
 GROUND - GND
 
 Barometric Altimeter:
-INPUT - analog 7
+SCL - Analog 5
+SDA - Analog 4
+Vin - 3.3-5V DC
+GND - GND
 
 Stepper motor:
-OUT - analog 8
-
+FWD - analog 10
+BWD - analog 11
+GND - GND
+GND - GND
 */
 
 // Set the delay between fresh samples
@@ -85,13 +100,23 @@ double velocity = 0;  //Initialize global velocity variable to 0
 
 void setup() {//all code in the setup function is run only once
 	Serial.begin(115200);
-	Serial.println("Orientation Sensor Test"); Serial.println("");
 
+	//Initialize and test accelerometer
+	Serial.println("Orientation Sensor Test"); Serial.println("");
 	if(!bno.begin()){
 		//There was a problem detecting the BNO055 ... check your connections
 		Serial.print("BNO055 not detected, check wiring or I2C address");
 		while(1);//display error message forever
 	}
+	
+	//Initialize and test altimeter
+	Serial.println("Altimeter Test"); Serial.println("");
+	if(!baro.begin()){
+		//There was a problem detecting the alt ... check your connections
+		Serial.print("Altimeter not detected, check wiring or I2C address");
+		while(1);//display error message forever
+	}
+
 
 	delay(1000);//delay to display messages
 
@@ -249,8 +274,8 @@ double getAngleToVertical(void){
 	// hardware read
 	sensors_event_t event;//orient event
 	bno.getEvent(&event, Adafruit_BNO055::VECTOR_GYROSCOPE);//get orientation
-	double x=event.orientation.x;//get angle to x
-	double y=event.orientation.y;//get angle to y
+	double x=event.orientation.x*180/pi;//get angle to x in radians, convert to deg
+	double y=event.orientation.y*180/pi;//get angle to y in radians, convert to deg
 	
 	// conversion to spherical
 	double theta=atan(y/x);//rectangular to spherical conversion
