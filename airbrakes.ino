@@ -50,9 +50,8 @@ add function prototypes
 
 /*
 Pin connections map:
-Note: to use both sensors, two Arduino Unos would be needed, thus a Due will 
-be used, as it has two pairs of I2C ports.  Arduino Uno pin connections are shown
-currently.
+Note: both sensors can be connected to the same pins, I2C can support up to 121
+devices simultaneously.
 
 Accelerometer:
 SCL - analog 5
