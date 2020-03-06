@@ -246,7 +246,7 @@ event is a structure of type sensors_event_t which holds information from the
 gyro sensor used to derive the angles
 */
 double getAngleToVertical(void){
-  // hardware read
+	// hardware read
 	sensors_event_t event;//orient event
 	bno.getEvent(&event, Adafruit_BNO055::VECTOR_GYROSCOPE);//get orientation
 	double x=event.orientation.x;//get angle to x
