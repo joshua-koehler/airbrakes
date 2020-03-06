@@ -95,12 +95,12 @@ void setup() {//all code in the setup function is run only once
 
 	delay(1000);//delay to display messages
 
-  Servo esc; //declare electronic speed controller
+	Servo esc; //declare electronic speed controller
 
 	pinMode(7,INPUT);//altimeter 
 	pinMode(airbrakeMotor,OUTPUT);//airbrakeMotor is pin 8
 
-  esc.attach(airbrakeMotor); //connects signal wire to pin 8 to control the motor
+	esc.attach(airbrakeMotor); //connects signal wire to pin 8 to control the motor
 	bno.setExtCrystalUse(true); //use external crystal boolean (keeps track of time
  
 	/*
@@ -120,10 +120,10 @@ void setup() {//all code in the setup function is run only once
 	*/
 
 	double alt=0;//initialize alt to force while loop
-  //1524meters = 5,000ft (half-way to apogee)
-  while(alt-Setpoint < halfwayToApogee) {
-    alt=baro.getAltitude();//keep measuring the altitude 
-  }
+	//1524meters = 5,000ft (half-way to apogee)
+	while(alt-Setpoint < halfwayToApogee) {
+		alt=baro.getAltitude();//keep measuring the altitude 
+	}
 	myPID.SetMode(AUTOMATIC);//turn the PID on
 }
 
@@ -134,9 +134,9 @@ This main function loop has three steps
 3. Write this output to the airbrakes motor
 */
 void loop() {
-  setInput();//set Input for PID compute
+	setInput();//set Input for PID compute
 
-  myPID.Compute();//have the PID compute the proper output
+	myPID.Compute();//have the PID compute the proper output
 
 	/* 
 	Probably should set an analog out limit in the PID software
@@ -160,11 +160,11 @@ void setInput(void){
 	sensors_event_t accEvent, orientEvent;
 	bno.getEvent(&accEvent, Adaruit_BNO055::VECTOR_LINEARACCEL);//read acceleromete
 	bno.getEvent(&orientEvent, Adaruit_BNO055::VECTOR_GYROSCOPE);//read gyro
-  */
+	*/
 	alt = baro.getAltitude();//get data from altimeter
 	v = getVelocity();//get velocity from altimeter THIS PAUSES THE ARDUINO
-  Cd = getDrag();
-  Input = getProjectedAltitude(Cd, v, alt);//calculate Input to PID
+	Cd = getDrag();
+	Input = getProjectedAltitude(Cd, v, alt);//calculate Input to PID
 }
 /*
 This function computes acceleration, storing it in a.
@@ -183,8 +183,8 @@ projected altitude.
 double getDrag(void) {
 	double a = getAcceleration();
 	// from mg+cv^2=a, we rearrange to solve for c
-  double c = (a-mass*gravity)/(velocity*velocity); 
-  return c;
+	double c = (a-mass*gravity)/(velocity*velocity); 
+	return c;
 }
 
 /*
@@ -215,10 +215,10 @@ event is a structure of type sensors_event_t that is passed to getAngletoVertica
 double getAcceleration(void) {//event is a struct of type sensors_event_t
 	sensors_event_t event;//event variable
 	bno.getEvent(&event, Adafruit_BNO055::VECTOR_LINEARACCEL);//read sensor
-  double theta = getAngleToVertical(); //get from gyro
-  //using spherical coordinates
-  double a = cos(theta)*event.acceleration.z;
-  return a;
+	double theta = getAngleToVertical(); //get from gyro
+	//using spherical coordinates
+	double a = cos(theta)*event.acceleration.z;
+	return a;
 }
 
 /*
@@ -237,7 +237,7 @@ double getVelocity(void) {
 	acc_second = getAcceleration();//get acceleration again
 	end = time(NULL);//get finish time
 	velocity=velocity + (end-start)*(acc_first+acc_second)/(2);//Vo + at
-  return velocity;
+	return velocity;
 }
 
 /*
@@ -249,10 +249,10 @@ double getAngleToVertical(void){
   // hardware read
 	sensors_event_t event;//orient event
 	bno.getEvent(&event, Adafruit_BNO055::VECTOR_GYROSCOPE);//get orientation
-  double x=event.orientation.x;//get angle to x
-  double y=event.orientation.y;//get angle to y
+	double x=event.orientation.x;//get angle to x
+	double y=event.orientation.y;//get angle to y
 	
 	// conversion to spherical
-  double theta=atan(y/x);//rectangular to spherical conversion
-  return theta;
+	double theta=atan(y/x);//rectangular to spherical conversion
+	return theta;
 }
