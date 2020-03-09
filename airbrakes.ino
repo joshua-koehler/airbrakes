@@ -10,6 +10,8 @@ Orientation: radians (converted to degrees in OUR code, but sensors gives in rad
 
 //*TODO*
 /*	1. Add real mass of rocket in the define statement
+		2. Set motor reverse logic (probably a pull-up pin to DIR)
+		3. Decide on PID activation point
 
 Also a few optimization decisions to make:
 1.	Get one event, and extrapolate all function data from this.
@@ -30,6 +32,7 @@ Also a few optimization decisions to make:
 if compiling C++ do the following:
 #include "Arduino.h"
 add function prototypes
+-lm switch for gcc
 */
 
 #define gravity 9.80665 //acceleration of gravity (m/s^2)
@@ -68,8 +71,10 @@ GND - GND
 Stepper motor:
 FWD - analog 10
 BWD - analog 11
+DIR - ???
 GND - GND
 GND - GND
+
 */
 
 // Set the delay between fresh samples
