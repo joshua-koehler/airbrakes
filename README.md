@@ -18,6 +18,6 @@ variable to the PID, being compared with the setpoint 10k AGL (10,000 feet above
 More testing will be done to collect data, and further tune the parameters to ensure the most precise system possible.
 
 If you have any questions about this project, feel free to send me a message on linkedin at 
-https://www.linkedin.com/in/josh-koehler-b37841175/
+https://www.linkedin.com/in/joshua-koehler/
  
 
