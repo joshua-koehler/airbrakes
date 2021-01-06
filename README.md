@@ -1,7 +1,7 @@
 This repository contains all the software used for the Airbrakes team of Clark Aerospace, 2019/2020 ESRA season 
 (Spaceport America Cup). 
 
-For the competition, the team designed and built a roughly 12' long, 70 pound (fuel included) rocket.
+For the competition, the team designed and built a roughly 12' long, 70 pound rocket.
 Competing against some 120 teams from around the world, Clark entered the 10k COTS (Commerical Off The Shelf motor) category.
 As such, the goal is to launch the rocket, and apogee (hit the peak of the flight), as close to 10,000 feet above ground level
 as possible, recovering the rocket safely. 
